@@ -1,21 +1,21 @@
 // Contract configuration
 export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
 
-// Network configuration for Zama
-export const ZAMA_CHAIN_ID = 8009;
-export const ZAMA_RPC_URL = "https://rpc.zama.ai";
-export const ZAMA_CHAIN_NAME = "Zama Network";
+// Network configuration for Ethereum Sepolia (Zama FHEVM on Sepolia)
+export const ZAMA_CHAIN_ID = 11155111; // Sepolia chain ID
+export const ZAMA_RPC_URL = "https://rpc.sepolia.org";
+export const ZAMA_CHAIN_NAME = "Ethereum Sepolia";
 
 export const NETWORK_CONFIG = {
   chainId: `0x${ZAMA_CHAIN_ID.toString(16)}`,
   chainName: ZAMA_CHAIN_NAME,
   nativeCurrency: {
-    name: "ZAMA",
-    symbol: "ZAMA",
+    name: "Sepolia ETH",
+    symbol: "SEP",
     decimals: 18,
   },
   rpcUrls: [ZAMA_RPC_URL],
-  blockExplorerUrls: ["https://explorer.zama.ai"],
+  blockExplorerUrls: ["https://sepolia.etherscan.io"],
 };
 
 // Game constants

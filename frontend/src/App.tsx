@@ -127,7 +127,7 @@ function App() {
           </div>
         ) : !wallet.isCorrectNetwork ? (
           <div className="glass rounded-xl p-12 text-center">
-            <p className="text-orange-400 mb-4">Please switch to Zama Network to play</p>
+            <p className="text-orange-400 mb-4">Please switch to Sepolia Network to play</p>
             <button
               onClick={wallet.switchNetwork}
               className="px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600
