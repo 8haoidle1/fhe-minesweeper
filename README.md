@@ -5,6 +5,7 @@ Privacy-preserving on-chain Minesweeper game powered by [Zama FHEVM](https://doc
 ## Live Demo
 
 - **Play Now**: [https://cipher-mines.vercel.app](https://cipher-mines.vercel.app)
+- **Video Demo**: [https://youtu.be/FCUVLFEVWjg](https://youtu.be/FCUVLFEVWjg)
 - **Contract (Sepolia)**: [0x63aF56Fd02D67a1c1D6c235cAE0BD5879ea8340C](https://sepolia.etherscan.io/address/0x63aF56Fd02D67a1c1D6c235cAE0BD5879ea8340C#code)
 
 ## Overview
