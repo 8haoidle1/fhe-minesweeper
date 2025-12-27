@@ -64,7 +64,7 @@ contract FHEMinesweeper is ZamaEthereumConfig {
 
     // Events
     event GameStarted(uint256 indexed gameId, address indexed player);
-    event CellRevealRequested(uint256 indexed gameId, uint8 cellIndex, address indexed player);
+    event CellRevealRequested(uint256 indexed gameId, uint8 cellIndex, address indexed player, bytes32 handle);
     event CellRevealed(uint256 indexed gameId, uint8 cellIndex, bool isMine);
     event GameWon(uint256 indexed gameId, address indexed player, uint256 clearTime);
     event GameLost(uint256 indexed gameId, address indexed player);
@@ -168,7 +168,8 @@ contract FHEMinesweeper is ZamaEthereumConfig {
         // Mark the encrypted value as publicly decryptable
         FHE.makePubliclyDecryptable(isMineEncrypted);
 
-        emit CellRevealRequested(gameId, cellIndex, msg.sender);
+        // Emit event with handle for frontend to use with relayer SDK
+        emit CellRevealRequested(gameId, cellIndex, msg.sender, ebool.unwrap(isMineEncrypted));
     }
 
     /**
@@ -291,9 +292,9 @@ contract FHEMinesweeper is ZamaEthereumConfig {
      * @notice Get pending reveal info
      * @param player The player address
      */
-    function getPendingReveal(address player) external view returns (uint256 gameId, uint8 cellIndex) {
+    function getPendingReveal(address player) external view returns (uint256 gameId, uint8 cellIndex, bytes32 handle) {
         RevealRequest storage request = pendingReveals[player];
-        return (request.gameId, request.cellIndex);
+        return (request.gameId, request.cellIndex, ebool.unwrap(request.encryptedValue));
     }
 
     /**

@@ -35,7 +35,6 @@ function App() {
 
   const handleCellClick = async (cellIndex: number) => {
     await game.requestRevealCell(cellIndex);
-    toast.success('Reveal requested! Waiting for decryption...');
   };
 
   const handlePlayAgain = () => {
@@ -167,10 +166,10 @@ function App() {
             {game.isPending && (
               <div className="text-center mt-4">
                 <div className="text-yellow-400 animate-pulse mb-2">
-                  Decrypting cell {game.pendingCell}... Waiting for Zama KMS
+                  {game.decryptStatus || `Processing cell ${game.pendingCell}...`}
                 </div>
                 <p className="text-xs text-gray-500">
-                  The off-chain relayer is decrypting your cell. Complete the reveal when ready.
+                  FHE decryption in progress. This may take up to 60 seconds.
                 </p>
               </div>
             )}

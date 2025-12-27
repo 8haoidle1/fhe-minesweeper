@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
 import { CONTRACT_ABI } from '../utils/contract';
 import { CONTRACT_ADDRESS, TOTAL_CELLS, GameState, CELL_HIDDEN, CELL_PENDING } from '../utils/constants';
+import { useFhevm } from './useFhevm';
 
 interface GameInfo {
   gameId: bigint | null;
@@ -29,6 +30,9 @@ export function useGame(signer: ethers.Signer | null) {
   const [pendingCell, setPendingCell] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [minesInitialized, setMinesInitialized] = useState(false);
+  const [decryptStatus, setDecryptStatus] = useState<string>('');
+  const { publicDecrypt, isInitializing: fhevmInitializing } = useFhevm();
+  const decryptingRef = useRef(false);
 
   // Initialize contract
   useEffect(() => {
@@ -133,18 +137,26 @@ export function useGame(signer: ethers.Signer | null) {
     }
   }, [contract, loadGame]);
 
-  // Request to reveal a cell (Step 1 of async decryption)
+  // Request to reveal a cell and auto-decrypt
   const requestRevealCell = useCallback(async (cellIndex: number) => {
     if (!contract || !gameInfo?.gameId) return;
     if (cellStates[cellIndex] !== CELL_HIDDEN) return;
-    if (isPending) return;
+    if (isPending || decryptingRef.current) return;
+    if (fhevmInitializing) {
+      setError('FHEVM SDK is still initializing...');
+      return;
+    }
 
     setIsPending(true);
     setPendingCell(cellIndex);
     setError(null);
+    setDecryptStatus('Requesting cell reveal...');
+
     try {
+      // Step 1: Request reveal on-chain
       const tx = await contract.requestRevealCell(gameInfo.gameId, cellIndex);
-      await tx.wait();
+      setDecryptStatus('Waiting for transaction confirmation...');
+      const receipt = await tx.wait();
 
       // Update local state to show pending
       setCellStates(prev => {
@@ -152,13 +164,66 @@ export function useGame(signer: ethers.Signer | null) {
         newStates[cellIndex] = CELL_PENDING;
         return newStates;
       });
+
+      // Get handle from event
+      const event = receipt.logs.find(
+        (log: { fragment?: { name: string } }) => log.fragment?.name === 'CellRevealRequested'
+      );
+
+      if (!event || !event.args) {
+        throw new Error('CellRevealRequested event not found');
+      }
+
+      const handle = event.args[3] as string; // 4th argument is handle
+      console.log('Got handle:', handle);
+
+      // Step 2: Wait for KMS to process and call publicDecrypt
+      setDecryptStatus('Waiting for Zama KMS decryption (this may take ~30s)...');
+      decryptingRef.current = true;
+
+      // Poll for decryption result with retries
+      let decryptResult = null;
+      let attempts = 0;
+      const maxAttempts = 20; // ~60 seconds total
+
+      while (!decryptResult && attempts < maxAttempts) {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3s between attempts
+          setDecryptStatus(`Polling for decryption result (attempt ${attempts + 1}/${maxAttempts})...`);
+          decryptResult = await publicDecrypt([handle]);
+          console.log('Decrypt result:', decryptResult);
+        } catch (err) {
+          console.log('Decrypt attempt failed, retrying...', err);
+          attempts++;
+        }
+      }
+
+      if (!decryptResult) {
+        throw new Error('Decryption timed out after 60 seconds');
+      }
+
+      // Step 3: Complete reveal with proof
+      setDecryptStatus('Completing reveal on-chain...');
+      const isMine = decryptResult.clearValues[handle as `0x${string}`] as boolean;
+      const proof = decryptResult.decryptionProof;
+
+      const completeTx = await contract.completeReveal(isMine, proof);
+      await completeTx.wait();
+
+      // Reload game state
+      await loadGame(gameInfo.gameId);
+      setDecryptStatus('');
+
     } catch (err) {
-      setError('Failed to request cell reveal');
+      setError('Failed to reveal cell: ' + (err as Error).message);
+      console.error(err);
+    } finally {
       setPendingCell(null);
       setIsPending(false);
-      console.error(err);
+      decryptingRef.current = false;
+      setDecryptStatus('');
     }
-  }, [contract, gameInfo, cellStates, isPending]);
+  }, [contract, gameInfo, cellStates, isPending, fhevmInitializing, publicDecrypt, loadGame]);
 
   // Complete the reveal with decryption proof (Step 3 of async decryption)
   const completeReveal = useCallback(async (isMine: boolean, decryptionProof: string) => {
@@ -240,6 +305,8 @@ export function useGame(signer: ethers.Signer | null) {
     pendingCell,
     error,
     minesInitialized,
+    decryptStatus,
+    fhevmInitializing,
     startGame,
     requestRevealCell,
     completeReveal,
