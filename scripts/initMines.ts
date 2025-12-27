@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const contractAddress = "0xaf3C681273ff6a7335f0ecfFb6514f335498475d";
+  const contractAddress = "0x63aF56Fd02D67a1c1D6c235cAE0BD5879ea8340C";
 
   const [deployer] = await ethers.getSigners();
   console.log("Initializing mines with account:", deployer.address);

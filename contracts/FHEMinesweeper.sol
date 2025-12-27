@@ -95,22 +95,23 @@ contract FHEMinesweeper is ZamaEthereumConfig {
     /**
      * @notice Initialize the mine grid with on-chain randomness
      * @dev Only owner can call this. Uses FHE random to place mines
-     *      Places exactly MINE_COUNT mines in random positions
+     *      Places mines randomly, with last cell (24) always being a mine for demo
      */
     function initializeMines() external onlyOwner {
         require(!minesInitialized, "Mines already initialized");
 
         // Generate random positions for mines using FHE randomness
-        // We'll use a simple approach: generate random value for each cell
-        // and mark as mine if value < threshold (MINE_COUNT * 256 / TOTAL_CELLS)
-        // This gives approximately MINE_COUNT mines on average
-
         for (uint8 i = 0; i < TOTAL_CELLS; i++) {
-            // Generate random encrypted uint8 (0-255)
-            euint8 randomValue = FHE.randEuint8();
-            // Threshold: (MINE_COUNT * 256) / TOTAL_CELLS = (5 * 256) / 25 = 51
-            // If random < 51, it's a mine (roughly 20% chance = 5/25)
-            encryptedMines[i] = FHE.lt(randomValue, FHE.asEuint8(51));
+            if (i == 24) {
+                // Last cell is always a mine (for demo video)
+                encryptedMines[i] = FHE.asEbool(true);
+            } else {
+                // Generate random encrypted uint8 (0-255)
+                euint8 randomValue = FHE.randEuint8();
+                // Threshold: ~16% chance for other cells (4 mines / 24 cells)
+                // (4 * 256) / 24 = 42
+                encryptedMines[i] = FHE.lt(randomValue, FHE.asEuint8(42));
+            }
             // Allow this contract to access the encrypted value
             FHE.allowThis(encryptedMines[i]);
         }
