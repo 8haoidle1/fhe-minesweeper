@@ -1,5 +1,5 @@
 // Contract configuration
-export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000";
+export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "0x05d45F23bA1F08053eC259e6d0D156624Ee5E208";
 
 // Network configuration for Ethereum Sepolia (Zama FHEVM on Sepolia)
 export const ZAMA_CHAIN_ID = 11155111; // Sepolia chain ID

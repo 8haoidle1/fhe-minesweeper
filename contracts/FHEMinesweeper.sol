@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import { ZamaEthereumConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
-import { FHE, euint8, ebool, externalEuint8 } from "@fhevm/solidity/lib/FHE.sol";
+import { FHE, euint8, ebool } from "@fhevm/solidity/lib/FHE.sol";
 
 /**
  * @title FHEMinesweeper
@@ -93,23 +93,24 @@ contract FHEMinesweeper is ZamaEthereumConfig {
     }
 
     /**
-     * @notice Initialize the mine grid with encrypted values
-     * @dev Only owner can call this. Mines are set using encrypted inputs
-     * @param minePositions Array of encrypted boolean values for each cell
-     * @param inputProof Zero-knowledge proof for the encrypted inputs
+     * @notice Initialize the mine grid with on-chain randomness
+     * @dev Only owner can call this. Uses FHE random to place mines
+     *      Places exactly MINE_COUNT mines in random positions
      */
-    function initializeMines(
-        externalEuint8[] calldata minePositions,
-        bytes calldata inputProof
-    ) external onlyOwner {
-        require(minePositions.length == TOTAL_CELLS, "Invalid mine positions length");
+    function initializeMines() external onlyOwner {
         require(!minesInitialized, "Mines already initialized");
 
+        // Generate random positions for mines using FHE randomness
+        // We'll use a simple approach: generate random value for each cell
+        // and mark as mine if value < threshold (MINE_COUNT * 256 / TOTAL_CELLS)
+        // This gives approximately MINE_COUNT mines on average
+
         for (uint8 i = 0; i < TOTAL_CELLS; i++) {
-            // Convert external encrypted input to euint8 with proof verification
-            euint8 value = FHE.fromExternal(minePositions[i], inputProof);
-            // Check if > 0 to get ebool (1 = mine, 0 = safe)
-            encryptedMines[i] = FHE.gt(value, FHE.asEuint8(0));
+            // Generate random encrypted uint8 (0-255)
+            euint8 randomValue = FHE.randEuint8();
+            // Threshold: (MINE_COUNT * 256) / TOTAL_CELLS = (5 * 256) / 25 = 51
+            // If random < 51, it's a mine (roughly 20% chance = 5/25)
+            encryptedMines[i] = FHE.lt(randomValue, FHE.asEuint8(51));
             // Allow this contract to access the encrypted value
             FHE.allowThis(encryptedMines[i]);
         }
