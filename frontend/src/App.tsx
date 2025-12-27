@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { useWallet } from './hooks/useWallet';
 import { useGame } from './hooks/useGame';

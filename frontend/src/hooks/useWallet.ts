@@ -96,7 +96,8 @@ export function useWallet() {
   useEffect(() => {
     if (!window.ethereum) return;
 
-    const handleAccountsChanged = (accounts: string[]) => {
+    const handleAccountsChanged = (...args: unknown[]) => {
+      const accounts = args[0] as string[];
       if (accounts.length === 0) {
         disconnect();
       } else {
@@ -104,7 +105,8 @@ export function useWallet() {
       }
     };
 
-    const handleChainChanged = (chainId: string) => {
+    const handleChainChanged = (...args: unknown[]) => {
+      const chainId = args[0] as string;
       setState(prev => ({ ...prev, chainId: parseInt(chainId, 16) }));
     };
 
