@@ -29,18 +29,13 @@ const config: HardhatUserConfig = {
         count: 10,
       },
     },
-    zama: {
-      url: "https://rpc.zama.ai",
-      chainId: 8009,
-      accounts: {
-        mnemonic: MNEMONIC,
-      },
-    },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
       chainId: 11155111,
       accounts: {
         mnemonic: MNEMONIC,
+        path: "m/44'/60'/0'/0/",
+        count: 10,
       },
     },
   },
