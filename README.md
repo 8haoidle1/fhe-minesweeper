@@ -2,6 +2,11 @@
 
 Privacy-preserving on-chain Minesweeper game powered by [Zama FHEVM](https://docs.zama.org/fhevm).
 
+## Live Demo
+
+- **Play Now**: [https://cipher-mines.vercel.app](https://cipher-mines.vercel.app)
+- **Contract (Sepolia)**: [0x63aF56Fd02D67a1c1D6c235cAE0BD5879ea8340C](https://sepolia.etherscan.io/address/0x63aF56Fd02D67a1c1D6c235cAE0BD5879ea8340C#code)
+
 ## Overview
 
 FHE Minesweeper brings the classic Minesweeper game to the blockchain with true privacy guarantees using Fully Homomorphic Encryption (FHE). Mine positions are encrypted on-chain, and even the smart contract cannot see where the mines are until a player reveals a cell.
@@ -43,9 +48,10 @@ contract FHEMinesweeper is ZamaEthereumConfig {
 
 | Operation | Description |
 |-----------|-------------|
-| `FHE.fromExternal()` | Converts external encrypted inputs with proof |
-| `FHE.gt()` | Compares encrypted values |
+| `FHE.randEuint8()` | Generates on-chain encrypted random uint8 |
+| `FHE.lt()` | Less-than comparison on encrypted values |
 | `FHE.asEuint8()` | Creates encrypted uint8 from plaintext |
+| `FHE.asEbool()` | Creates encrypted boolean from plaintext |
 | `FHE.allowThis()` | Grants contract access to encrypted value |
 | `FHE.makePubliclyDecryptable()` | Marks ciphertext for public decryption |
 | `FHE.checkSignatures()` | Verifies KMS decryption proof |
@@ -54,9 +60,9 @@ contract FHEMinesweeper is ZamaEthereumConfig {
 
 ### Smart Contracts
 - **Solidity**: ^0.8.24
-- **@fhevm/solidity**: ^0.10.0
-- **@fhevm/hardhat-plugin**: 0.3.0-4
-- **@zama-fhe/relayer-sdk**: ^0.3.0-8
+- **@fhevm/solidity**: 0.9.1
+- **@fhevm/hardhat-plugin**: 0.3.0-3
+- **@zama-fhe/relayer-sdk**: 0.3.0-8
 - **Hardhat**: ^2.26.0
 
 ### Frontend
@@ -148,21 +154,22 @@ npm run dev
 
 ## Network Configuration
 
-### Zama Network
-- **RPC URL**: https://rpc.zama.ai
-- **Chain ID**: 8009
-- **Explorer**: https://explorer.zama.ai
+### Ethereum Sepolia (Zama FHEVM)
+- **RPC URL**: https://ethereum-sepolia-rpc.publicnode.com
+- **Chain ID**: 11155111
+- **Explorer**: https://sepolia.etherscan.io
+- **Deployed Contract**: `0x63aF56Fd02D67a1c1D6c235cAE0BD5879ea8340C`
 
 ## How the FHE Privacy Works
 
-1. **Mine Initialization**: The contract owner creates 25 encrypted boolean values off-chain (1 for mine, 0 for safe) and submits them with a ZK proof. The contract stores these as `ebool` types.
+1. **Mine Initialization**: The contract owner calls `initializeMines()` which uses `FHE.randEuint8()` to generate on-chain encrypted random values. Each cell stores an encrypted boolean (`ebool`) indicating whether it contains a mine.
 
 2. **During Gameplay**: When a player clicks a cell, the contract:
    - Retrieves the encrypted mine status (`ebool`)
-   - Marks it for public decryption
-   - Waits for off-chain decryption and proof
+   - Calls `FHE.makePubliclyDecryptable()` to mark it for decryption
+   - Frontend uses Zama Relayer SDK to poll for decryption result
 
-3. **Verification**: The player submits the decrypted boolean with a KMS signature. The contract verifies this signature before updating the game state.
+3. **Verification**: The player submits the decrypted boolean with a KMS signature. The contract calls `FHE.checkSignatures()` to verify the proof before updating the game state.
 
 4. **Privacy Guarantee**: At no point can anyone (including the contract) see other mine positions. Only the revealed cell's status becomes known.
 
